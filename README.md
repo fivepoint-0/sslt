@@ -2,6 +2,18 @@
 
 Terminal UI for SSL certificate creation, inspection, export, import, CSR generation, and local CA management.
 
+## Table of Contents
+
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [TUI Functions](#tui-functions)
+- [Feature Screenshots](#feature-screenshots)
+- [Help Screen (`?`)](#help-screen-)
+- [Versioning and Releases](#versioning-and-releases)
+- [Testing](#testing)
+- [CI Badges](#ci-badges)
+- [Coverage Reporting](#coverage-reporting)
+
 ## Requirements
 
 - Python `3.12+`
@@ -89,12 +101,53 @@ SSLT home hotkeys:
 
 ## Feature Screenshots
 
-Quick preview:
+### Home hub
+
+Context: landing page after launch. This is the command center where you can open each workflow (`n`, `l`, `e`, `i`, `c`, `a`, `?`) and see which certificate is currently selected for export.
 
 ![Home hub](docs/screenshots/home.svg)
+
+### Create Certificate (`n`)
+
+Context: certificate creation form with subject details, key size, SANs, validity window, and signing mode (`auto`, `self_signed`, `local_ca`). Use `Ctrl+S` to generate and `F2` to save defaults.
+
+![Create certificate](docs/screenshots/create-certificate.svg)
+
+### List / Inspect Certificates (`l`)
+
+Context: list and details view for managed certificates. Selecting an item displays issuer/subject, validity, SANs, fingerprints, and supports quick actions like export or delete.
+
 ![List and inspect certificates](docs/screenshots/list-inspect.svg)
 
-Full gallery: [`docs/usage.md`](docs/usage.md)
+### Export Certificate (`e`)
+
+Context: export flow for the selected certificate. Choose output format (`PEM`, `DER`, `PKCS#12`), destination path, optional filename override, and optional P12 password.
+
+![Export certificate](docs/screenshots/export-certificate.svg)
+
+### Import Certificate (`i`)
+
+Context: import flow for bringing existing certificate files into SSLT management, with optional key file attachment and custom display label.
+
+![Import certificate](docs/screenshots/import-certificate.svg)
+
+### Generate CSR (`c`)
+
+Context: CSR generation screen for external CA workflows. Configure subject and SAN fields, then generate a CSR + private key pair with `F4`.
+
+![Generate CSR](docs/screenshots/generate-csr.svg)
+
+### Local CA Management (`a`)
+
+Context: local root CA administration screen for creating a development CA, installing trust into the OS trust store, and deleting CA artifacts.
+
+![Local CA management](docs/screenshots/local-ca.svg)
+
+### Help Modal (`?`)
+
+Context: in-app keybinding and workflow reference for quick navigation without leaving the terminal UI.
+
+![Help modal](docs/screenshots/help.svg)
 
 To regenerate these images:
 
