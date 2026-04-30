@@ -1,0 +1,116 @@
+name: Coverage
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Run tests with coverage
+        run: |
+          uv run pytest \
+            --cov=src/sslt \
+            --cov-report=term-missing \
+            --cov-report=xml:coverage.xml \
+            --cov-report=markdown:coverage.md
+
+      - name: Publish coverage summary
+        run: |
+          {
+            echo "## Coverage Report"
+            echo
+            cat coverage.md
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Generate self-hosted coverage badge
+        run: |
+          uv run python - <<'PY'
+          import pathlib
+          from datetime import datetime, timezone
+          import xml.etree.ElementTree as ET
+
+          root = ET.parse("coverage.xml").getroot()
+          line_rate = float(root.attrib.get("line-rate", "0"))
+          pct = int(round(line_rate * 100))
+
+          if pct >= 90:
+              color = "#4c1"
+          elif pct >= 75:
+              color = "#97CA00"
+          elif pct >= 60:
+              color = "#dfb317"
+          else:
+              color = "#e05d44"
+
+          label = "coverage"
+          value = f"{pct}%"
+          label_width = 74
+          value_width = 52
+          total_width = label_width + value_width
+
+          svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{total_width}" height="20" role="img" aria-label="{label}: {value}">
+          <linearGradient id="s" x2="0" y2="100%">
+            <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
+            <stop offset="1" stop-opacity=".1"/>
+          </linearGradient>
+          <clipPath id="r">
+            <rect width="{total_width}" height="20" rx="3" fill="#fff"/>
+          </clipPath>
+          <g clip-path="url(#r)">
+            <rect width="{label_width}" height="20" fill="#555"/>
+            <rect x="{label_width}" width="{value_width}" height="20" fill="{color}"/>
+            <rect width="{total_width}" height="20" fill="url(#s)"/>
+          </g>
+          <g fill="#fff" text-anchor="middle" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" text-rendering="geometricPrecision" font-size="110">
+            <text aria-hidden="true" x="380" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)">{label}</text>
+            <text x="380" y="140" transform="scale(.1)" fill="#fff">{label}</text>
+            <text aria-hidden="true" x="990" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)">{value}</text>
+            <text x="990" y="140" transform="scale(.1)" fill="#fff">{value}</text>
+          </g>
+          </svg>
+          """
+
+          badge_dir = pathlib.Path(".github/badges")
+          badge_dir.mkdir(parents=True, exist_ok=True)
+          (badge_dir / "coverage.svg").write_text(svg, encoding="utf-8")
+          timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+          (badge_dir / "coverage-updated.txt").write_text(timestamp + "\n", encoding="utf-8")
+          PY
+
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            coverage.xml
+            coverage.md
+            .github/badges/coverage.svg
+            .github/badges/coverage-updated.txt
+
+      - name: Commit updated coverage badge
+        if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && github.actor != 'github-actions[bot]'
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "ci: update coverage badge metadata [skip ci]"
+          file_pattern: .github/badges/coverage.svg .github/badges/coverage-updated.txt
