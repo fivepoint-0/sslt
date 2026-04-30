@@ -91,6 +91,40 @@ jobs:
             exit 1
           fi
 
+      - name: Preflight check PyPI version availability
+        shell: bash
+        run: |
+          export TAG_VERSION="${GITHUB_REF_NAME#v}"
+          python - <<'PY'
+          import json
+          import os
+          import urllib.error
+          import urllib.request
+
+          package = "sslt"
+          version = os.environ["TAG_VERSION"]
+          url = f"https://pypi.org/pypi/{package}/json"
+
+          try:
+              with urllib.request.urlopen(url, timeout=15) as response:
+                  payload = json.load(response)
+          except urllib.error.HTTPError as exc:
+              if exc.code == 404:
+                  print(f"Package '{package}' is not on PyPI yet; continuing.")
+                  raise SystemExit(0)
+              raise
+
+          releases = payload.get("releases", {})
+          if version in releases:
+              print(f"Version {version} already exists on PyPI for '{package}'.")
+              print("Use a new tag/version (for example: v0.1.1).")
+              print("PyPI does not allow reusing release filenames.")
+              print("See: https://pypi.org/help/#file-name-reuse")
+              raise SystemExit(1)
+
+          print(f"PyPI preflight OK: {package} {version} not present in current release index.")
+          PY
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:

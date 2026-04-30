@@ -5,7 +5,7 @@ SHELL := /usr/bin/env bash
 test:
 	uv run pytest
 
-release: screenshots
+release:
 	@if [[ -z "$(VERSION)" ]]; then \
 		echo "Usage: make release VERSION=0.1.0"; \
 		exit 1; \
